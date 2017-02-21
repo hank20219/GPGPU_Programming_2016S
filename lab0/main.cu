@@ -14,25 +14,23 @@ __global__ void draw(char
 		":                                     :",
 		":                                     :",
 		":                                     :",
-		":       ####                       <| :",
-		":       ######                      | :",
-		":       ########                    | :",
-		":       ##########                  | :",
-		":       ############                | :",
+		":                 ####             <| :",
+		":               ######              | :",
+		":             ########              | :",
+		":           ##########              | :",
+		":         ############              | :",
 		":       ##############              # :",
 		":::::::::::::::::::::::::::::::::::::::" };
 	const int x = blockIdx.x * blockDim.x + threadIdx.x;
-	//const int y = blockIdx.y * blockDim.y + threadIdx.y;
+	const int y = blockIdx.y * blockDim.y + threadIdx.y;
 
-	if (x < W * H) {
-		char c = '\0';
-		if (x % W == W - 1)
+	if (x < W && y < H) {
+		char c;
+		if (x == W - 1 && y != H - 1)
 			c = '\n';
-		//else if (x % W == 1)
-		//	c = x / W + 1;
 		else
-			c = tmp_str[x / W][x % W];
-		odata[x] = c;
+			c = tmp_str[y][x];
+		odata[y * W + x] = c;
 	}
 }
 int main(void)
@@ -44,11 +42,11 @@ int main(void)
 	memset(h_data, 0, strlen);
 	cudaMalloc((void **)&d_data, strsize);
 	cudaMemcpy(d_data, h_data, strsize, cudaMemcpyHostToDevice);
-	int blocksize = 40;
-	int nblock = strlen / blocksize + (strlen % blocksize == 0 ? 0 : 1);
-	draw <<<nblock, blocksize>>>(d_data);
-	cudaMemcpy(h_data, d_data, strsize, cudaMemcpyDeviceToHost);
-	printf("%480s", h_data);
+	dim3 blocksize = dim3(16, 12, 1);
+	dim3 nblock = dim3((W - 1) / 16 + 1, (H - 1) / 12 + 1, 1);
+	draw <<<nblock, blocksize>>>(d_data);	
+	cudaMemcpy(h_data, d_data, strlen, cudaMemcpyDeviceToHost);
+	printf("%s", h_data);
 	free(h_data);
 	cudaFree(d_data);
 }
