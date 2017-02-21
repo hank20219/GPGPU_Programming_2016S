@@ -1,46 +1,54 @@
-#include <cstdio>
-#include <cstdlib>
-#include "SyncedMemory.h"
-
-#define CHECK {\
-	auto e = cudaDeviceSynchronize();\
-	if (e != cudaSuccess) {\
-		printf("At " __FILE__ ":%d, %s\n", __LINE__, cudaGetErrorString(e));\
-		abort();\
-	}\
-}
+#include <stdio.h>
+#include <stdlib.h>
+#include <cuda.h>
 
 const int W = 40;
 const int H = 12;
 
-__global__ void Draw(char *frame) {
-	// TODO: draw more complex things here
-	// Do not just submit the original file provided by the TA!
-	const int y = blockIdx.y * blockDim.y + threadIdx.y;
+__global__ void draw(char
+	*odata)
+{
+	const char tmp_str[H][W] =
+	  { ":::::::::::::::::::::::::::::::::::::::",
+		":                                     :",
+		":                                     :",
+		":                                     :",
+		":                                     :",
+		":       ####                       <| :",
+		":       ######                      | :",
+		":       ########                    | :",
+		":       ##########                  | :",
+		":       ############                | :",
+		":       ##############              # :",
+		":::::::::::::::::::::::::::::::::::::::" };
 	const int x = blockIdx.x * blockDim.x + threadIdx.x;
-	if (y < H and x < W) {
-		char c;
-		if (x == W-1) {
-			c = y == H-1 ? '\0' : '\n';
-		} else if (y == 0 or y == H-1 or x == 0 or x == W-2) {
-			c = ':';
-		} else {
-			c = ' ';
-		}
-		frame[y*W+x] = c;
+	//const int y = blockIdx.y * blockDim.y + threadIdx.y;
+
+	if (x < W * H) {
+		char c = '\0';
+		if (x % W == W - 1)
+			c = '\n';
+		//else if (x % W == 1)
+		//	c = x / W + 1;
+		else
+			c = tmp_str[x / W][x % W];
+		odata[x] = c;
 	}
 }
-
-int main(int argc, char **argv)
+int main(void)
 {
-	MemoryBuffer<char> frame(W*H);
-	auto frame_smem = frame.CreateSync(W*H);
-	CHECK;
-
-	Draw<<<dim3((W-1)/16+1,(H-1)/12+1), dim3(16,12)>>>(frame_smem.get_gpu_wo());
-	CHECK;
-
-	puts(frame_smem.get_cpu_ro());
-	CHECK;
-	return 0;
+	char *h_data, *d_data;
+	const int strlen = W*H;
+	size_t strsize = strlen * sizeof(char);
+	h_data = (char *)malloc(strsize);
+	memset(h_data, 0, strlen);
+	cudaMalloc((void **)&d_data, strsize);
+	cudaMemcpy(d_data, h_data, strsize, cudaMemcpyHostToDevice);
+	int blocksize = 40;
+	int nblock = strlen / blocksize + (strlen % blocksize == 0 ? 0 : 1);
+	draw <<<nblock, blocksize>>>(d_data);
+	cudaMemcpy(h_data, d_data, strsize, cudaMemcpyDeviceToHost);
+	printf("%480s", h_data);
+	free(h_data);
+	cudaFree(d_data);
 }
