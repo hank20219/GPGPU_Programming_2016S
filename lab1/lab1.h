@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include <memory>
+
+
 using std::unique_ptr;
 
 struct Lab1VideoInfo {

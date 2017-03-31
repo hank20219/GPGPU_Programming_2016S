@@ -1,8 +1,10 @@
 #include <cstdio>
 #include <cstdint>
 #include <cstdlib>
-#include "SyncedMemory.h"
 #include "lab1.h"
+#include "../utils/SyncedMemory.h"
+
+
 using namespace std;
 
 #define CHECK {\
@@ -19,10 +21,10 @@ int main(int argc, char **argv)
 	Lab1VideoInfo i;
 
 	g.get_info(i);
-	if (i.w == 0 or i.h == 0 or i.n_frame == 0 or i.fps_n == 0 or i.fps_d == 0) {
+	if (i.w == 0 || i.h == 0 || i.n_frame == 0 || i.fps_n == 0 || i.fps_d == 0) {
 		puts("Cannot be zero");
 		abort();
-	} else if (i.w%2 != 0 or i.h%2 != 0) {
+	} else if (i.w%2 != 0 || i.h%2 != 0) {
 		puts("Only even frame size is supported");
 		abort();
 	}
